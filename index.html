@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ABAY DOWNLOADER</title>
+<style>
+body{background:#000;color:#fff;font-family:Arial;text-align:center;padding:20px;margin:0}
+h1{color:#fe2c55;margin-top:40px}
+input{width:95%;max-width:400px;padding:16px;border-radius:12px;border:2px solid #222;background:#111;color:#fff;font-size:16px}
+button{background:#fe2c55;color:#fff;border:none;padding:16px 30px;border-radius:12px;margin-top:15px;font-size:18px;font-weight:bold;width:95%;max-width:400px}
+.card{background:#111;padding:25px 15px;border-radius:20px;max-width:500px;margin:25px auto;border:1px solid #222}
+#result{margin-top:20px} video{width:100%;max-width:400px;border-radius:12px;margin-top:15px}
+a.down{display:block;background:#fff;color:#000;padding:15px;border-radius:12px;text-decoration:none;font-weight:bold;margin-top:15px}
+</style>
+</head>
+<body>
+<h1>ABAY DOWNLOADER 🔥</h1>
+<p>TikTok No Watermark</p>
+<div class="card">
+<input id="url" placeholder="Paste TikTok link here...">
+<br>
+<button onclick="download()">DOWNLOAD NOW</button>
+<div id="result"></div>
+</div>
+<script>
+async function download(){
+  let url=document.getElementById('url').value;
+  if(!url) return alert("Paste link first!");
+  document.getElementById('result').innerHTML="⏳ Loading...";
+  try{
+    let api=`https://www.tikwm.com/api/?url=${url}`;
+    let res=await fetch(api); let data=await res.json();
+    if(data.data){
+      let v=data.data.play;
+      document.getElementById('result').innerHTML=`<video controls src="${v}"></video><a class="down" href="${v}" target="_blank">⬇️ DOWNLOAD VIDEO</a>`;
+    } else document.getElementById('result').innerHTML="❌ Failed, try another link";
+  }catch(e){document.getElementById('result').innerHTML="❌ Error: "+e}
+}
+</script>
+</body>
+</html>
