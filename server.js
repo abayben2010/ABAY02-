@@ -1,35 +1,3 @@
-// ABAY02 backend — resolves a shareable link from TikTok, Instagram, Facebook,
-// or YouTube into a direct, no-watermark video URL using yt-dlp.
-
-const express = require('express');
-const cors = require('cors');
-const { execFile } = require('child_process');
-
-const app = express();
-app.use(cors());
-
-const PORT = process.env.PORT || 3000;
-
-const hits = new Map();
-function rateLimited(ip) {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const max = 20;
-  const entry = hits.get(ip) || { count: 0, reset: now + windowMs };
-  if (now > entry.reset) { entry.count = 0; entry.reset = now + windowMs; }
-  entry.count += 1;
-  hits.set(ip, entry);
-  return entry.count > max;
-}
-
-function detectPlatform(url) {
-  if (/tiktok\.com/i.test(url)) return 'tiktok';
-  if (/instagram\.com/i.test(url)) return 'instagram';
-  if (/facebook\.com|fb\.watch/i.test(url)) return 'facebook';
-  if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
-  return 'unknown';
-}
-
 app.get('/api/resolve', (req, res) => {
   const ip = req.ip;
   if (rateLimited(ip)) {
@@ -42,19 +10,24 @@ app.get('/api/resolve', (req, res) => {
   }
 
   const platform = detectPlatform(rawUrl);
+  console.log(`[resolve] incoming: ${platform} — ${rawUrl}`);
+
   if (platform === 'unknown') {
     return res.status(400).json({ error: 'That link isn\'t from TikTok, Instagram, Facebook, or YouTube.' });
   }
 
   const args = ['-j', '--no-playlist', '--no-warnings', rawUrl];
 
-  execFile('yt-dlp', args, { timeout: 25000, maxBuffer: 1024 * 1024 * 20 }, (err, stdout) => {
+  execFile('yt-dlp', args, { timeout: 25000, maxBuffer: 1024 * 1024 * 20 }, (err, stdout, stderr) => {
     if (err) {
+      console.error('[resolve] yt-dlp failed:', err.message);
+      if (stderr) console.error('[resolve] stderr:', stderr.slice(0, 500));
       const message = /Private|login required/i.test(err.message)
         ? 'That post is private or needs a login — can\'t fetch it.'
         : 'Couldn\'t read that link. It may be region-locked, deleted, or the platform changed something.';
       return res.status(502).json({ error: message });
     }
+    console.log('[resolve] yt-dlp succeeded');
 
     let info;
     try {
@@ -88,7 +61,3 @@ app.get('/api/resolve', (req, res) => {
     });
   });
 });
-
-app.get('/health', (req, res) => res.json({ ok: true }));
-
-app.listen(PORT, () => console.log(`ABAY02 backend listening on :${PORT}`));
